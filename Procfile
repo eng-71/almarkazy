@@ -1,0 +1,5 @@
+# web: bash start.sh && gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:${PORT:-8080} --timeout 120 main:app
+
+
+
+web: bash start.sh
