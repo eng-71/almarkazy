@@ -7,15 +7,18 @@
 
     <!-- ══ SEO Meta Tags ══ -->
     <title>الطب المركزي | استعلام عن الكشف وحجز المواعيد</title>
-    <meta name="description" content="الطب المركزي - نظام استعلام عن الكشف ومتابعة دور المريض في العيادات. احجز موعدك وتابع دورك في الكشف لحظة بلحظة مع أفضل الأطباء.">
-    <meta name="keywords" content="الطب المركزي, عيادات, حجز مواعيد, استعلام عن الكشف, متابعة دور المريض, عيادة, دكتور, طب, مركز طبي">
+    <meta name="description"
+        content="الطب المركزي - نظام استعلام عن الكشف ومتابعة دور المريض في العيادات. احجز موعدك وتابع دورك في الكشف لحظة بلحظة مع أفضل الأطباء.">
+    <meta name="keywords"
+        content="الطب المركزي, عيادات, حجز مواعيد, استعلام عن الكشف, متابعة دور المريض, عيادة, دكتور, طب, مركز طبي">
     <meta name="robots" content="index, follow">
     <meta name="author" content="الطب المركزي">
 
     <!-- ══ Open Graph (Facebook / WhatsApp / etc.) ══ -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="الطب المركزي | استعلام عن الكشف وحجز المواعيد">
-    <meta property="og:description" content="تابع دورك في الكشف لحظة بلحظة واحجز موعدك بسهولة مع أفضل الأطباء في الطب المركزي.">
+    <meta property="og:description"
+        content="تابع دورك في الكشف لحظة بلحظة واحجز موعدك بسهولة مع أفضل الأطباء في الطب المركزي.">
     <meta property="og:locale" content="ar_AR">
     <meta property="og:site_name" content="الطب المركزي">
 
@@ -385,8 +388,15 @@
         }
 
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-12px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
@@ -540,6 +550,8 @@
             <button type="submit" class="login-btn">تسجيل الدخول</button>
         </form>
     </div>
+
+    <a href="{{ url_for('privacy') }}" class="btn-privacy">سياسة الخصوصية</a>
 
     <!-- Real-time SSE -->
     <script>

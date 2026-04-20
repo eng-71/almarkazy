@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify , flash
-import eventlet
-from eventlet import monkey_patch       
+# import eventlet
+# from eventlet import monkey_patch       
 
-eventlet.monkey_patch() 
+# eventlet.monkey_patch() 
 from flask_sqlalchemy import SQLAlchemy 
 from sqlalchemy import or_ , func ,and_ , extract
 from sqlalchemy.orm import joinedload , relationship
@@ -147,7 +147,9 @@ def clinic_login():
  
 
  
-
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
 
 # @app.route('/add_bills', methods=['POST'])
 # def add_bills():

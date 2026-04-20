@@ -10,9 +10,11 @@ import requests
 logger = logging.getLogger(__name__)
 
 # ── Configuration (read from environment) ──────────────────────────────────
-WHATSAPP_API_TOKEN = os.environ.get('WHATSAPP_API_TOKEN', '')
-WHATSAPP_PHONE_ID = os.environ.get('WHATSAPP_PHONE_ID', '201019278838')
-WHATSAPP_TEMPLATE_NAME = os.environ.get('WHATSAPP_TEMPLATE_NAME', 'hello_world')
+WHATSAPP_API_TOKEN = os.environ.get('WHATSAPP_API_TOKEN', 'EAASNymnpqyYBRWfzJQBHLyEr4GF1OjRogcl8CZAasjgAvhGxFCebP0Fcpjxwz3vn4hzis9QZBEvQ3MVieuRAeqsFe3mL1F9KD2FPhAE60ZA6H9MRNeHgYPMhOQeON8HYj9SZApzl7xoJ0TwpqSrXNRnpxmvhfOdMfulY7rMBW43fX2LlDGPM838vN6dM712ehTrXMUH4SpntjHV0xXjlRTrua6wXsfz6fOlm4G0SkG0y4ZCVR2DZBG4kmkEJpzb0u4ksZBYjBvB3KfxeAgPYlP7')
+
+WHATSAPP_PHONE_ID = os.environ.get('WHATSAPP_PHONE_ID', '1099732069887230')
+WHATSAPP_TEMPLATE_NAME = os.environ.get('WHATSAPP_TEMPLATE_NAME', 'order_confirm')
+WHATSAPP_TEMPLATE_LANGUAGE=os.environ.get('WHATSAPP_TEMPLATE_LANGUAGE', 'ar_EG')
 SITE_URL = os.environ.get('SITE_URL', 'https://alteb.almarkazy.com')
 
 GRAPH_API_URL = f"https://graph.facebook.com/v25.0/{WHATSAPP_PHONE_ID}/messages"
@@ -92,19 +94,29 @@ def send_appointment_whatsapp(
         "template": {
             "name": WHATSAPP_TEMPLATE_NAME,
             "language": {
-                "code": "ar"  # Arabic
+                "code": WHATSAPP_TEMPLATE_LANGUAGE
             },
             "components": [
                 {
                     "type": "body",
                     "parameters": [
                         {"type": "text", "text": clinic_name},
-                        {"type": "text", "text": doctor_name},
                         {"type": "text", "text": appointment_date},
                         {"type": "text", "text": appointment_time},
-                        {"type": "text", "text": auto_lookup_url}
+                        {"type": "text", "text": doctor_name }
+                        # ,
+                        # {"type": "text", "text": auto_lookup_url}
                     ]
                 }
+                ,
+            {
+                "type": "button",
+                "sub_type": "url",
+                "index": "0", # فهرس الزر (أول زر يبدأ من 0)
+                "parameters": [
+                    {"type": "text", "text": auto_lookup_url} # {{1}} في اللينك
+                ]
+            }
             ]
         }
     }
