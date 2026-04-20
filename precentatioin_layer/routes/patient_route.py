@@ -151,11 +151,24 @@ def patient():
     visit_date = date.today()
     patient_found = None
 
-    request.method == 'POST'
-    name = request.form['name']
-    normalized_input = normalize_arabic(name)
-    phone = request.form['phone']
-    id = request.form['phone']
+    # request.method == 'POST'
+    # name = request.form['name']
+    # normalized_input = normalize_arabic(name)
+    # phone = request.form['phone']
+    # id = request.form['phone']
+    if request.method == 'POST':
+        # 1. بنستخدم .strip() لإزالة المسافات في البداية والنهاية
+        # 2. بنستخدم split() و join() لو عاوز تشيل المسافات الكتير اللي بين الأسماء وتخليها مسافة واحدة بس
+        name = request.form['name']
+        
+        # تنظيف المسافات: "  أحمد    محمد  " تصبح "أحمد محمد"
+        clean_name = " ".join(name.split())
+        
+        # دلوقتى نمرر الاسم النظيف للدالة بتاعتك
+        normalized_input = normalize_arabic(clean_name)
+        
+        phone = request.form['phone'].strip() # يفضل كمان تنظف رقم التليفون
+        id = phone # ملحوظة: يفضل تسمية المتغير patient_id بدل id لأن id كلمة محجوزة في بايثون
 
     query = Visit.query.filter(or_(Visit.normalized_name == normalized_input , Visit.patient_name==name))
     if phone or id : 
