@@ -3059,6 +3059,26 @@
                                 location.reload();
                             }, 2000);
                         }
+                        else if (data.type === 'patient_order_changed') {
+                            console.log('Patient order changed: Doctor ' + data.doctor_id + ', Patient #' + data.patient_number);
+                            showClinicNotification(
+                                '🔄 الدكتور انتقل للمريض رقم ' + data.patient_number,
+                                '#fff3cd'
+                            );
+                        }
+                        else if (data.type === 'queue_reordered') {
+                            console.log('Queue reordered for doctor ' + data.doctor_id);
+                            showClinicNotification(
+                                '📋 تم إعادة ترتيب قائمة المرضى',
+                                '#cfe2ff'
+                            );
+                            setTimeout(function () {
+                                location.reload();
+                            }, 2000);
+                        }
+                        else if (data.type === 'avg_time_updated') {
+                            console.log('Average consultation time updated');
+                        }
                     } catch (err) {
                         console.error('Error parsing clinic event:', err, event.data);
                     }

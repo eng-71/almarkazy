@@ -418,10 +418,10 @@
             border-radius: 8px;
             /* Scroll hint shadow on sides */
             background:
-                linear-gradient(to right, white 30%, rgba(255,255,255,0)),
-                linear-gradient(to right, rgba(255,255,255,0), white 70%) 100% 0,
-                radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.12), transparent),
-                radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.12), transparent) 100% 0;
+                linear-gradient(to right, white 30%, rgba(255, 255, 255, 0)),
+                linear-gradient(to right, rgba(255, 255, 255, 0), white 70%) 100% 0,
+                radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, .12), transparent),
+                radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, .12), transparent) 100% 0;
             background-repeat: no-repeat;
             background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
             background-attachment: local, local, scroll, scroll;
@@ -491,6 +491,7 @@
         }
 
         @media (max-width: 480px) {
+
             table th,
             table td {
                 padding: 6px 4px;
@@ -862,49 +863,49 @@
             <div class="card-header">الدكاترة</div>
             <div class="card-body">
                 <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>الاسم</th>
-                            <th>اسم المستخدم</th>
-                            <th>القسم</th>
-                            <th>المريض الحالي</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for doctor in doctor_data |reverse %}
-                        <tr>
-                            <td>{{ doctor.doctor.name }}</td>
-                            <td>{{ doctor.doctor.username }}</td>
-                            <td>{{ doctor.doctor.section.name_section }}</td>
-                            <td>{{ doctor.doctor.current_patient }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>اسم المستخدم</th>
+                                <th>القسم</th>
+                                <th>المريض الحالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doctor in doctor_data |reverse %}
+                            <tr>
+                                <td>{{ doctor.doctor.name }}</td>
+                                <td>{{ doctor.doctor.username }}</td>
+                                <td>{{ doctor.doctor.section.name_section }}</td>
+                                <td>{{ doctor.doctor.current_patient }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="card-header">الاستقبال</div>
             <div class="card-body">
                 <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>الاسم</th>
-                            <th>اسم المستخدم</th>
-                            <th>الرقم</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for reception in receptions |reverse %}
-                        <tr>
-                            <td>{{ reception.name }}</td>
-                            <td>{{ reception.email }}</td>
-                            <td>{{ reception.phone }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>اسم المستخدم</th>
+                                <th>الرقم</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reception in receptions |reverse %}
+                            <tr>
+                                <td>{{ reception.name }}</td>
+                                <td>{{ reception.email }}</td>
+                                <td>{{ reception.phone }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -1002,26 +1003,6 @@
                         </div>
                     </div>
 
-                    <!-- Full Width Bottom Boxes Row -->
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 30px;">
-                        <!-- Total Paid Box -->
-                        <div
-                            style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 10px; padding: 20px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">إجمالي المبالغ المدفوعة
-                            </div>
-                            <div style="font-size: 28px; font-weight: bold;" id="total-paid-box">0</div>
-                            <div style="font-size: 11px; opacity: 0.8; margin-top: 8px;">✓ Total Paid</div>
-                        </div>
-
-                        <!-- Total Remaining Box -->
-                        <div
-                            style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 10px; padding: 20px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">إجمالي المبالغ المتبقية
-                            </div>
-                            <div style="font-size: 28px; font-weight: bold;" id="total-remaining-box">0</div>
-                            <div style="font-size: 11px; opacity: 0.8; margin-top: 8px;">⏳ Remaining</div>
-                        </div>
-                    </div>
 
                     <div id="report-container" style="min-height: 300px;">
                         <p style="text-align: center; color: #999;">انقر على "عرض التقرير" لتحميل البيانات</p>
@@ -2565,11 +2546,8 @@
 
                     if (data.success) {
                         // Update summary boxes
-                        document.getElementById('total-remaining-box').textContent = data.total_remaining;
                         document.getElementById('total-bills-box').textContent = data.total_bills;
                         document.getElementById('total-all-revenue-box').textContent = data.total_all_revenue;
-                        document.getElementById('total-paid-box').textContent = data.total_paid;
-                        document.getElementById('total-remaining-box').textContent = data.total_remaining;
 
                         // Calculate and display net profit (Total Revenue - Total Bills)
                         const netProfit = parseFloat(data.total_all_revenue) - parseFloat(data.total_bills);

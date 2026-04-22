@@ -967,6 +967,83 @@
         .sortable-ghost {
             opacity: 0.5;
         }
+
+        /* ══ Doctor Stats Info Bar ══ */
+        .doctor-stats-bar {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 12px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8edf8 100%);
+            border-bottom: 1px solid #d0daf0;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            border-radius: 12px;
+            padding: 10px 18px;
+            box-shadow: 0 2px 8px rgba(0,21,64,0.07);
+            border: 1px solid #e0e7ef;
+            min-width: 140px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(0,21,64,0.12);
+        }
+
+        .stat-card .stat-icon {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .stat-card .stat-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card .stat-title {
+            font-size: 0.72rem;
+            color: #8393b2;
+            font-weight: 600;
+        }
+
+        .stat-card .stat-val {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        @keyframes stat-pulse {
+            0% { background: #fff; }
+            50% { background: rgba(10, 132, 255, 0.12); }
+            100% { background: #fff; }
+        }
+
+        .stat-card.highlight {
+            animation: stat-pulse 0.8s ease-in-out;
+        }
+
+        @media (max-width: 480px) {
+            .doctor-stats-bar {
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            .stat-card {
+                padding: 8px 12px;
+                min-width: 100px;
+                flex: 1;
+            }
+            .stat-card .stat-val {
+                font-size: 0.92rem;
+            }
+        }
     </style>
 </head>
 
@@ -1040,6 +1117,31 @@
                     </option>
                     {% endfor %}
                 </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ Doctor Stats Info Bar ══ -->
+    <div class="doctor-stats-bar" id="doctorStatsBar">
+        <div class="stat-card" id="stat-avg-time">
+            <span class="stat-icon">⏱️</span>
+            <div class="stat-content">
+                <span class="stat-title">متوسط مدة الكشف</span>
+                <span class="stat-val" id="avg-time-value">{{ avg_consultation_formatted if avg_consultation_formatted and avg_consultation_formatted != '0 ث' else '—' }}</span>
+            </div>
+        </div>
+        <div class="stat-card" id="stat-total-patients">
+            <span class="stat-icon">👥</span>
+            <div class="stat-content">
+                <span class="stat-title">مرضى اليوم</span>
+                <span class="stat-val" id="total-patients-value">{{ total_patients_today }}</span>
+            </div>
+        </div>
+        <div class="stat-card" id="stat-current-num">
+            <span class="stat-icon">🔢</span>
+            <div class="stat-content">
+                <span class="stat-title">رقم المريض الحالي</span>
+                <span class="stat-val" id="current-num-value">{{ current_patient_number if current_patient_number else '—' }}</span>
             </div>
         </div>
     </div>
@@ -1885,6 +1987,12 @@
                     else if (data.type === 'patient_order_changed') {
                         console.log(`🔄 Patient order changed: Patient #${data.patient_number}`);
                         showToast(`🔄 تم تغيير ترتيب المريض - الرقم: ${data.patient_number}`, 2000);
+                        // Update stats bar
+                        refreshDoctorStats();
+                    }
+                    else if (data.type === 'avg_time_updated') {
+                        console.log('📊 Average time updated');
+                        refreshDoctorStats();
                     }
                 } catch (err) {
                     console.error('❌ Error parsing SSE event:', err, event.data);
@@ -1897,6 +2005,42 @@
                 console.log('🔄 Reconnecting to SSE stream in 3 seconds...');
                 setTimeout(setupEventStream, 3000);
             };
+        }
+
+        // Fetch and update the doctor stats bar via AJAX
+        function refreshDoctorStats() {
+            fetch(`/doctor/stats_json`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) return;
+
+                    const avgEl = document.getElementById('avg-time-value');
+                    const totalEl = document.getElementById('total-patients-value');
+                    const curEl = document.getElementById('current-num-value');
+
+                    if (avgEl && data.avg_consultation_formatted) {
+                        avgEl.textContent = data.avg_consultation_formatted !== '0 ث' ? data.avg_consultation_formatted : '—';
+                        pulseStatCard('stat-avg-time');
+                    }
+                    if (totalEl && data.total_patients_today != null) {
+                        totalEl.textContent = data.total_patients_today;
+                        pulseStatCard('stat-total-patients');
+                    }
+                    if (curEl && data.current_patient_number != null) {
+                        curEl.textContent = data.current_patient_number || '—';
+                        pulseStatCard('stat-current-num');
+                    }
+                })
+                .catch(err => console.error('Stats refresh error:', err));
+        }
+
+        function pulseStatCard(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('highlight');
+            void el.offsetWidth;
+            el.classList.add('highlight');
+            setTimeout(() => el.classList.remove('highlight'), 900);
         }
 
         // Initialize when DOM is ready

@@ -431,7 +431,8 @@
 
     {% if results %}
     <!-- Results -->
-    <div class="results-wrapper" data-clinic-id="{{ results.clinic_id | default(1) }}">
+    <div class="results-wrapper" data-clinic-id="{{ results.clinic_id | default(1) }}"
+        data-patient-id="{{ results.patient_id | default('') }}">
         {% for doctor_id, doc in results.doctors.items() %}
         <div class="doctor-card {% if doc.your_number == doc.current_number %}current-card{% endif %}"
             data-clinic-id="{{ doc.clinic_id }}" data-doctor-id="{{ doctor_id }}" id="card-{{ doctor_id }}">
@@ -494,38 +495,22 @@
                         —
                         {% endif %}
                     </span>
-                    </span>
                 </div>
-                {% if doc.average_consultation_formatted and doc.average_consultation_formatted != '—' %}
-                <div class="card-meta-row" data-avg-last-5>
+                <div class="card-meta-row" data-avg-last-5
+                    {% if not doc.average_consultation_formatted or doc.average_consultation_formatted == '—' %}style="display:none"{% endif %}>
                     <span class="meta-label">متوسط مدة الكشف</span>
-                    <span class="meta-value">⏱️ {{ doc.average_consultation_formatted }}</span>
+                    <span class="meta-value">⏱️ {{ doc.average_consultation_formatted if doc.average_consultation_formatted and doc.average_consultation_formatted != '—' else '' }}</span>
                 </div>
-                {% endif %}
-                <!-- {% if doc.daily_average_formatted and doc.daily_average_formatted != '—' %}
-                <div class="card-meta-row" data-avg-daily>
-                    <span class="meta-label">متوسط كشوفات اليوم</span>
-                    <span class="meta-value">📅 {{ doc.daily_average_formatted }}</span>
+                <div class="card-meta-row" data-expected-service
+                    {% if not doc.delay_time_seconds or doc.delay_time_seconds <= 0 %}style="display:none"{% endif %}>
+                    <span class="meta-label">الوقت المتوقع</span>
+                    <span class="meta-value">🕐 {{ doc.expected_service_time.strftime('%I:%M %p') if doc.expected_service_time else '' }}</span>
                 </div>
-                {% endif %} -->
-                {% if doc.expected_wait_formatted and doc.expected_wait_formatted != '—' and doc.patients_ahead > 0 %}
-                <div class="card-meta-row" data-expected-wait>
-                    <span class="meta-label">الوقت المتوقع لموعدك</span>
-                    <span class="meta-value">⏳
-                        {% if doc.expected_wait_time %}
-                        {{ doc.expected_wait_time.strftime('%I:%M %p') }}
-                        {% else %}
-                        {{ doc.expected_wait_formatted }}
-                        {% endif %}
-                    </span>
-                </div>
-                {% endif %}
-                {% if doc.expected_wait_formatted and doc.expected_wait_formatted != '—' and doc.patients_ahead > 0 %}
-                <div class="card-meta-row" data-wait-duration>
+                <div class="card-meta-row" data-wait-duration
+                    {% if not doc.expected_wait_formatted or doc.expected_wait_formatted == '—' or not doc.patients_ahead or doc.patients_ahead <= 0 or not doc.delay_time_seconds or doc.delay_time_seconds <= 0 %}style="display:none"{% endif %}>
                     <span class="meta-label">مدة الانتظار</span>
-                    <span class="meta-value">⏱️ {{ doc.expected_wait_formatted }}</span>
+                    <span class="meta-value">⏱️ {{ doc.expected_wait_formatted if doc.expected_wait_formatted and doc.expected_wait_formatted != '—' else '' }}</span>
                 </div>
-                {% endif %}
                 <div class="card-meta-row">
                     <span class="meta-label">الحالة</span>
                     {% if doc.visit_status == "منتهي" %}
@@ -551,7 +536,7 @@
         </form>
     </div>
 
-    <a href="{{ url_for('privacy') }}" class="btn-privacy">سياسة الخصوصية</a>
+    <!-- <a href="{{ url_for('privacy') }}" class="btn-privacy">سياسة الخصوصية</a> -->
 
     <!-- Real-time SSE -->
     <script>
@@ -559,6 +544,10 @@
             const eventSources = new Map();
             const reconnects = new Map();
             const MAX_RETRY = 3;
+
+            // Get patient_id from the results wrapper
+            const resultsWrapper = document.querySelector('.results-wrapper');
+            const patientId = resultsWrapper ? resultsWrapper.getAttribute('data-patient-id') : null;
 
             function updateCard(doctorId, newCurrentNumber) {
                 const pill = document.getElementById(`current-pill-${doctorId}`);
@@ -577,8 +566,6 @@
                 }
 
                 // Update قبلك (patients ahead of you)
-                // Formula: how many patients are still between current serving number and yours
-                // e.g. yours=5, cur=3 → ahead = 5-3 = 2
                 if (aheadEl && yours > 0) {
                     const ahead = isNaN(cur) ? yours - 1 : Math.max(yours - cur, 0);
                     aheadEl.textContent = ahead;
@@ -598,6 +585,87 @@
                 } else {
                     card.classList.remove('current-card');
                 }
+            }
+
+            /**
+             * Fetch fresh data from the backend and update all card fields.
+             * Called when SSE events like queue_reordered or avg_time_updated arrive.
+             */
+            function refreshCardData() {
+                if (!patientId) return;
+
+                fetch(`/patient/update_numbers_v2?patient_id=${patientId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.warn('refreshCardData error:', data.error);
+                            return;
+                        }
+                        for (const [doctorId, doc] of Object.entries(data)) {
+                            const card = document.getElementById(`card-${doctorId}`);
+                            if (!card) continue;
+
+                            // Update current number
+                            const pill = document.getElementById(`current-pill-${doctorId}`);
+                            if (pill) pill.textContent = doc.current_number != null ? doc.current_number : '—';
+
+                            // Update patients ahead
+                            const aheadEl = document.getElementById(`ahead-num-${doctorId}`);
+                            if (aheadEl) aheadEl.textContent = doc.patients_ahead != null ? doc.patients_ahead : '—';
+
+                            // Update average consultation time
+                            const avgRow = card.querySelector('[data-avg-last-5] .meta-value');
+                            if (avgRow && doc.average_consultation_formatted && doc.average_consultation_formatted !== '—') {
+                                avgRow.textContent = '⏱️ ' + doc.average_consultation_formatted;
+                            }
+                            // Show/hide avg row
+                            const avgRowParent = card.querySelector('[data-avg-last-5]');
+                            if (avgRowParent) {
+                                avgRowParent.style.display = (doc.average_consultation_formatted && doc.average_consultation_formatted !== '—') ? '' : 'none';
+                            }
+
+                            // Update expected service time
+                            const serviceRow = card.querySelector('[data-expected-service] .meta-value');
+                            if (serviceRow && doc.delay_time_seconds > 0) {
+                                serviceRow.textContent = '🕐 ' + doc.expected_service_time;
+                            }
+                            // Show/hide service row
+                            const serviceRowParent = card.querySelector('[data-expected-service]');
+                            if (serviceRowParent) {
+                                serviceRowParent.style.display = doc.delay_time_seconds > 0 ? '' : 'none';
+                            }
+
+                            // Update wait duration
+                            const waitRow = card.querySelector('[data-wait-duration] .meta-value');
+                            if (waitRow && doc.expected_wait_formatted && doc.expected_wait_formatted !== '—' && doc.patients_ahead > 0) {
+                                waitRow.textContent = '⏱️ ' + doc.expected_wait_formatted;
+                            }
+                            // Show/hide wait row
+                            const waitRowParent = card.querySelector('[data-wait-duration]');
+                            if (waitRowParent) {
+                                waitRowParent.style.display = (doc.expected_wait_formatted && doc.expected_wait_formatted !== '—' && doc.patients_ahead > 0 && doc.delay_time_seconds > 0) ? '' : 'none';
+                            }
+
+                            // Update your-turn state
+                            const yours = doc.your_number || 0;
+                            const cur = doc.current_number || 0;
+                            if (yours > 0 && cur > 0 && yours <= cur) {
+                                card.classList.add('current-card');
+                            } else {
+                                card.classList.remove('current-card');
+                            }
+
+                            // Pulse ahead box for visual feedback
+                            const aheadBox = document.getElementById(`ahead-box-${doctorId}`);
+                            if (aheadBox) {
+                                aheadBox.classList.remove('highlight');
+                                void aheadBox.offsetWidth;
+                                aheadBox.classList.add('highlight');
+                                setTimeout(() => aheadBox.classList.remove('highlight'), 900);
+                            }
+                        }
+                    })
+                    .catch(err => console.error('refreshCardData fetch error:', err));
             }
 
             function handleCancelled(doctorId) {
@@ -632,8 +700,25 @@
                     try {
                         const data = JSON.parse(e.data);
                         if (data.type === 'connected') { reconnects.set(clinicId, 0); }
-                        else if (data.type === 'patient_order_changed') { updateCard(data.doctor_id, data.patient_number); }
+                        else if (data.type === 'patient_order_changed') {
+                            // Quick update of current number
+                            updateCard(data.doctor_id, data.patient_number);
+                            // Full refresh of all calculated fields
+                            setTimeout(() => refreshCardData(), 500);
+                        }
                         else if (data.type === 'cancel_visit') { handleCancelled(data.doctor_id); }
+                        else if (data.type === 'queue_reordered') {
+                            console.log('Queue reordered event received, refreshing data...');
+                            setTimeout(() => refreshCardData(), 500);
+                        }
+                        else if (data.type === 'avg_time_updated') {
+                            console.log('Average consultation time updated, refreshing data...');
+                            setTimeout(() => refreshCardData(), 500);
+                        }
+                        else if (data.type === 'new_patient') {
+                            // New patient added, refresh to recalculate positions
+                            setTimeout(() => refreshCardData(), 500);
+                        }
                     } catch (err) { console.error('SSE parse error:', err); }
                 };
 

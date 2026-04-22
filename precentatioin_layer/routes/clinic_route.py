@@ -27,9 +27,6 @@ def clinic_bills():
     else:
         return render_template('clinic_management.html', active_tab='bills-tab', bills=bills_data)
 
-    
-    return render_template('clinic_management.html', active_tab='bills-tab', bills=bills)
-
 @clinicBP.route('/add_bill', methods=['POST'])
 @require_feature("add_bill")
 def add_bill():
@@ -176,7 +173,8 @@ def api_reporting_summary():
             procedures = (
                 db.session.query(
                     Procedure.process_id,
-                    func.sum(Procedure.final_cost).label("total_proc_cost") #هنا ابقى عدلها لو عايز تخلي نسبة الدكتور تتحسب من العملية ولا من التكلفة النهائية بعد الخصم
+                    func.sum(Procedure.final_cost).label("total_proc_cost")
+                    ,func.sum(Procedure.cost).label("cost") #هنا ابقى عدلها لو عايز تخلي نسبة الدكتور تتحسب من العملية ولا من التكلفة النهائية بعد الخصم
                 )
                 .join(Visit, Procedure.visit_id == Visit.id)
                 .filter(
@@ -200,8 +198,9 @@ def api_reporting_summary():
                 percentage_value = float(percentage_record.percentage if percentage_record else 0)
                 
                 total_cost = float(proc.total_proc_cost or 0)
+                cost = float(proc.cost or 0)
                 # Doctor gets this much, clinic gets the rest
-                revenue_share = (percentage_value / 100) * total_cost
+                revenue_share = (percentage_value / 100) * cost
                 clinic_share = total_cost - revenue_share
                 
                 procedure_revenue += clinic_share
@@ -252,7 +251,7 @@ def api_reporting_summary():
         ).filter(
             Visit.clinic_id == clinic_id,
             extract('month', Visit.visit_date) == month,
-            extract('year', Visit.visit_date) == year ,
+            extract('year', Visit.visit_date) == year,
             Visit.visit_status == "منتهي"
         ).all()
         
@@ -343,7 +342,8 @@ def api_procedure_report():
                 db.session.query(
                     Procedure.process_id,
                     func.count(Procedure.id).label("proc_count"),
-                    func.sum(Procedure.final_cost).label("total_proc_cost")
+                    func.sum(Procedure.cost).label("doctor_revenue"),
+                func.sum(Procedure.final_cost).label("total_proc_cost") #هنا ابقى عدلها لو عايز تخلي نسبة الدكتور تتحسب من العملية ولا من التكلفة النهائية بعد الخصم
                 )
                 .join(Visit, Procedure.visit_id == Visit.id)
                 .filter(
@@ -371,7 +371,8 @@ def api_procedure_report():
                 percentage_value = float(percentage_record.percentage if percentage_record else 0)
                 
                 total_cost = float(proc.total_proc_cost or 0)
-                revenue_share = int((percentage_value / 100) * total_cost)
+                doctor_revenue = float(proc.doctor_revenue or 0)
+                revenue_share = int((percentage_value / 100) * doctor_revenue)
                 clinic_share = total_cost - revenue_share
                 
                 combined_report.append({

@@ -467,6 +467,13 @@ def doctor_home():
             'patients_ahead': idx  # How many patients are ahead
         })
 
+    # Get average consultation time for doctor stats bar
+    from busnisess_layer.functions.consultation_time_func import get_average_consultation_time, format_seconds_to_time_string
+    avg_consultation = get_average_consultation_time(doctor.id)
+    avg_seconds = avg_consultation['average_seconds'] if avg_consultation else 0
+    avg_formatted = format_seconds_to_time_string(avg_seconds)
+    total_patients_today = len(visitors)
+
     return render_template('doctor_home.html', 
                          doctor=doctor, 
                          clinic_name=clinic_name,
@@ -478,7 +485,48 @@ def doctor_home():
                          visitors_with_queue=visitors_with_queue,
                          clinic=clinic,
                          procedures=procedures,
-                         current_visit_id=current_visit_id)  # إرسال visit_id إلى القالب
+                         current_visit_id=current_visit_id,
+                         avg_consultation_formatted=avg_formatted,
+                         avg_consultation_seconds=avg_seconds,
+                         total_patients_today=total_patients_today)
+
+
+@doctorBP.route('/doctor/stats_json', methods=['GET'])
+def doctor_stats_json():
+    """Lightweight AJAX endpoint returning doctor stats for the real-time stats bar."""
+    doctor_id = session.get('doctor_id')
+    if not doctor_id:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    doctor = Doctor.query.get(doctor_id)
+    if not doctor:
+        return jsonify({'error': 'Doctor not found'}), 404
+
+    visitors = Visit.query.filter(
+        Visit.doctor_id == doctor_id,
+        func.date(Visit.visit_date) == datetime.today().date(),
+        or_(Visit.visit_status == "مؤكد", Visit.visit_status == "منتهي")
+    ).order_by(Visit.visit_date.asc()).all()
+
+    from busnisess_layer.functions.consultation_time_func import get_average_consultation_time, format_seconds_to_time_string
+    avg_consultation = get_average_consultation_time(doctor.id)
+    avg_seconds = avg_consultation['average_seconds'] if avg_consultation else 0
+    avg_formatted = format_seconds_to_time_string(avg_seconds)
+
+    # Determine current patient number
+    current_visit_id = session.get('current_visit_id')
+    current_patient_number = None
+    if current_visit_id:
+        current_index = next((i for i, v in enumerate(visitors) if v.id == current_visit_id), None)
+        if current_index is not None:
+            current_patient_number = current_index + 1
+
+    return jsonify({
+        'avg_consultation_formatted': avg_formatted,
+        'avg_consultation_seconds': avg_seconds,
+        'total_patients_today': len(visitors),
+        'current_patient_number': current_patient_number,
+    })
 
 
 @doctorBP.route('/doctor/visitors_poll', methods=['GET'])

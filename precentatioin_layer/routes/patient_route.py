@@ -9,7 +9,7 @@ from busnisess_layer.models import (
     Clinics, Reception, Patient, Procedure, Process, 
     Doctor, Bills, Section, Percentages, Invoice , Visit
 )
-
+import re
 
 from sqlalchemy import or_ , func ,and_ , extract
 
@@ -85,6 +85,14 @@ def _build_visit_results(visits, visit_date):
                 expected_wait_time = current_time + timedelta(seconds=expected_wait_seconds)
                 expected_wait_formatted = format_seconds_to_time_string(expected_wait_seconds)
 
+                # Calculate delay time: if expected_wait_time extends past visit appointment time
+                delay_time_seconds = (expected_wait_time - visit.visit_date).total_seconds()
+                delay_time_seconds = delay_time_seconds if delay_time_seconds > 0 else 0
+                delay_time_formatted = format_seconds_to_time_string(delay_time_seconds) if delay_time_seconds > 0 else "—"
+
+                # Calculate expected service time: visit appointment time + delay
+                expected_service_time = visit.visit_date + timedelta(seconds=delay_time_seconds)
+
                 doctor_visits[doctor.id] = {
                     "doctor_name": doctor.name,
                     "section_name": section.name_section if section else "غير محدد",
@@ -103,6 +111,10 @@ def _build_visit_results(visits, visit_date):
                     "expected_wait_minutes": round(expected_wait_seconds / 60, 2) if expected_wait_seconds else 0,
                     "expected_wait_formatted": expected_wait_formatted,
                     "expected_wait_time": expected_wait_time,
+                    "delay_time_seconds": delay_time_seconds,
+                    "delay_time_minutes": round(delay_time_seconds / 60, 2) if delay_time_seconds else 0,
+                    "delay_time_formatted": delay_time_formatted,
+                    "expected_service_time": expected_service_time,
                     "consultation_count": doctor.consultation_count
                 }
 
@@ -117,6 +129,7 @@ def _build_visit_results(visits, visit_date):
             results = {
                 "patient_name": visits[0].patient_name,
                 "patient_phone": visits[0].patient_phone,
+                "patient_id": visits[0].patient_id,
                 "visit_date": visit_date,
                 "clinic_id": primary_clinic_id,
                 "all_clinic_ids": list(clinic_ids),
@@ -234,4 +247,54 @@ def patient_auto_lookup(token):
                          results=results,
                          patient_found=token_visit,
                          auto_lookup=True)
+
+
+@patientBP.route('/patient/update_numbers_v2', methods=['GET'])
+def update_numbers_v2():
+    """
+    AJAX endpoint for real-time SSE updates on the patient page.
+    Returns JSON with all calculated fields for each doctor:
+      - current_number, patients_ahead, average_consultation_formatted,
+        expected_wait_formatted, expected_service_time, delay_time_formatted
+    Query params: patient_id (required)
+    """
+    patient_id = request.args.get('patient_id')
+    if not patient_id:
+        return jsonify({'error': 'Missing patient_id'}), 400
+
+    visit_date = date.today()
+
+    # Get today's visits for this patient
+    visits = Visit.query.filter(
+        Visit.patient_id == patient_id,
+        func.date(Visit.visit_date) == visit_date,
+        or_(Visit.visit_status == "مؤكد", Visit.visit_status == "منتهي")
+    ).order_by(Visit.visit_date.desc()).all()
+
+    if not visits:
+        return jsonify({'error': 'No visits found'}), 404
+
+    results, _ = _build_visit_results(visits, visit_date)
+
+    if not results or 'doctors' not in results:
+        return jsonify({'error': 'No doctor data'}), 404
+
+    # Build a simplified response for the frontend
+    response = {}
+    for doctor_id, doc in results['doctors'].items():
+        response[str(doctor_id)] = {
+            'current_number': doc.get('current_number'),
+            'your_number': doc.get('your_number'),
+            'patients_ahead': doc.get('patients_ahead', 0),
+            'average_consultation_formatted': doc.get('average_consultation_formatted', '—'),
+            'average_consultation_seconds': doc.get('average_consultation_seconds', 0),
+            'expected_wait_formatted': doc.get('expected_wait_formatted', '—'),
+            'expected_wait_seconds': doc.get('expected_wait_seconds', 0),
+            'expected_service_time': doc.get('expected_service_time').strftime('%I:%M %p') if doc.get('expected_service_time') else '—',
+            'delay_time_formatted': doc.get('delay_time_formatted', '—'),
+            'delay_time_seconds': doc.get('delay_time_seconds', 0),
+            'consultation_count': doc.get('consultation_count', 0),
+        }
+
+    return jsonify(response)
 

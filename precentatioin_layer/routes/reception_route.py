@@ -7,6 +7,7 @@ from busnisess_layer.models import (
     Clinics, Reception, Patient, Procedure, Process, 
     Doctor, Bills, Section, Percentages, Invoice , Visit
 )
+from configDB.redis_helper import publish_event
 from flask_sse import sse
 import uuid
 
@@ -699,7 +700,6 @@ def edit_visit():
         )
         
         # Broadcast to clinic to update expected times for patients
-        from configDB.redis_helper import publish_event
         event_data = {
             'type': 'queue_reordered',
             'doctor_id': visit.doctor_id,
@@ -718,7 +718,6 @@ def edit_visit():
 @receptionBP.route('/reception/reorder_queue', methods=['POST'])
 def reorder_queue():
     from busnisess_layer.functions.consultation_time_func import recalculate_all_patient_expected_times
-    from configDB.redis_helper import publish_event
     reception_id = session.get('reception_id')
     if not reception_id:
         return jsonify({'error': 'Unauthorized'}), 401
