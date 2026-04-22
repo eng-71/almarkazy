@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 # ── Configuration (read from environment) ──────────────────────────────────
 # WAPilot API Configuration
-WAPILOT_API_TOKEN = os.environ.get('WAPILOT_API_TOKEN', 'PvkTCTQcJFxCgauJ5q7Qcprmxw8R8fRgcEWPDdIRGA')
-WAPILOT_INSTANCE_ID = os.environ.get('WAPILOT_INSTANCE_ID', 'instance3805')
+WAPILOT_API_TOKEN = os.environ.get('WAPILOT_API_TOKEN', '5Y0xDV1v9lue5IkAOpqeWueA4diPypoy4ZvaEphq4e')
+WAPILOT_INSTANCE_ID = os.environ.get('WAPILOT_INSTANCE_ID', 'instance3809')
 SITE_URL = os.environ.get('SITE_URL', 'https://alteb.almarkazy.com')
 
 
@@ -98,7 +98,7 @@ def send_appointment_whatsapp(
         f"📅 التاريخ: {appointment_date}\n"
         f"🕐 الوقت: {appointment_time}\n"
         f"👨‍⚕️ الدكتور: {doctor_name}\n\n"
-        f"لتأكيد الموعد أو لمزيد من المعلومات:\n"
+        f"حفاظا على وقتك تابع دورك ومعاد حضورك لايف :\n"
         f"{auto_lookup_url}"
     )
     
